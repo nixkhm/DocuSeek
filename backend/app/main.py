@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.core.middleware import SessionMiddleware
 from app.db import async_session_factory
 from app.models.session import Session
-from app.routers import documents
+from app.routers import documents, search
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -44,6 +44,7 @@ app.add_middleware(
 app.add_middleware(SessionMiddleware)
 
 app.include_router(documents.router)
+app.include_router(search.router)
 
 
 @app.get("/api/v1/health")
