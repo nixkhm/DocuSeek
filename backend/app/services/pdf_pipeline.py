@@ -6,9 +6,12 @@ import pdfplumber
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sqlalchemy import select
+
 from app.db import async_session_factory
 from app.models.chunk import Chunk
 from app.models.document import Document
+from app.services.embedding import embedding_service
 from app.services.storage import storage
 
 
@@ -128,12 +131,26 @@ async def _chunk(
     return raw_chunks
 
 
-async def process(doc_id: uuid.UUID, file_path: str, session_id: uuid.UUID) -> None:
-    """Run the PDF processing pipeline: extract → chunk → embed → store.
+async def _embed(db: AsyncSession, doc_id: uuid.UUID) -> None:
+    """Embed all chunks for a document and store vectors in pgvector."""
+    await _set_status(db, doc_id, "embedding")
 
-    Each stage updates the document status field.
-    Embedding stage added in task 2.1-2.2.
-    """
+    result = await db.execute(select(Chunk).where(Chunk.document_id == doc_id))
+    chunks = result.scalars().all()
+
+    if not chunks:
+        return
+
+    vectors = await embedding_service.embed_batch([c.chunk_text for c in chunks])
+
+    for chunk, vector in zip(chunks, vectors):
+        chunk.embedding = vector
+
+    await db.commit()
+
+
+async def process(doc_id: uuid.UUID, file_path: str, session_id: uuid.UUID) -> None:
+    """Run the full PDF processing pipeline: extract → chunk → embed → ready."""
     async with async_session_factory() as db:
         try:
             # Stage 1: extract
@@ -144,8 +161,11 @@ async def process(doc_id: uuid.UUID, file_path: str, session_id: uuid.UUID) -> N
             # Stage 2: chunk
             await _chunk(db, doc_id, session_id, pages)
 
-            # Stage 3: embed (task 2.2 — pipeline ends here for now)
-            # Status stays at "chunking" until embedding is wired up
+            # Stage 3: embed
+            await _embed(db, doc_id)
+
+            # Stage 4: ready
+            await _set_status(db, doc_id, "ready")
 
         except Exception:
             async with async_session_factory() as err_db:
