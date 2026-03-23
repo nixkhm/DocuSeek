@@ -1,10 +1,12 @@
 import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.deps import get_db, get_session_id
+from app.core.limiter import limiter
 from app.schemas.chat import ChatRequest, ChatSSEEvent, Citation
 from app.services.cache import cache_service
 from app.services.chain import extract_citations, stream_chain
@@ -15,7 +17,9 @@ router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
 
 
 @router.post("")
+@limiter.limit(f"{settings.rate_limit_queries_per_hour}/hour")
 async def chat(
+    request: Request,
     body: ChatRequest,
     session_id: uuid.UUID = Depends(get_session_id),
     db: AsyncSession = Depends(get_db),
