@@ -1,0 +1,67 @@
+import uuid
+
+from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.deps import get_db, get_session_id
+from app.schemas.chat import ChatRequest, ChatSSEEvent, Citation
+from app.services.cache import cache_service
+from app.services.chain import extract_citations, stream_chain
+from app.services.embedding import embedding_service
+from app.services.retriever import retriever_service
+
+router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
+
+
+@router.post("")
+async def chat(
+    body: ChatRequest,
+    session_id: uuid.UUID = Depends(get_session_id),
+    db: AsyncSession = Depends(get_db),
+) -> StreamingResponse:
+    """Stream an LLM response over Server-Sent Events.
+
+    Each event during streaming: {"token": "...", "citations": null, "done": false}
+    Final event: {"token": "", "citations": [...], "done": true}
+    """
+    doc_ids = body.document_ids
+
+    # Cache check for embedding + retrieval results
+    cached = await cache_service.get(body.query, doc_ids)
+    if cached:
+        chunks = cached["results"]
+    else:
+        embedding = await embedding_service.embed_text(body.query)
+        chunks = await retriever_service.search(
+            db=db,
+            query_embedding=embedding,
+            session_id=session_id,
+            document_ids=doc_ids,
+            top_k=10,
+        )
+        await cache_service.set(body.query, doc_ids, embedding, chunks)
+
+    async def event_stream():
+        full_answer = []
+
+        async for token in stream_chain(body.query, chunks):
+            full_answer.append(token)
+            event = ChatSSEEvent(token=token)
+            yield f"data: {event.model_dump_json()}\n\n"
+
+        answer = "".join(full_answer)
+        raw_citations = extract_citations(answer, chunks)
+        citations = [Citation(**c) for c in raw_citations]
+
+        final_event = ChatSSEEvent(citations=citations, done=True)
+        yield f"data: {final_event.model_dump_json()}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
