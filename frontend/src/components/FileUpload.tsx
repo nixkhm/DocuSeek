@@ -66,8 +66,8 @@ export function FileUpload({ onUpload, documentCount, maxDocuments }: FileUpload
 
   if (atLimit) {
     return (
-      <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4 text-center text-sm text-gray-500">
-        Maximum documents reached — delete one to upload more.
+      <div className="rounded-lg border border-dashed border-ds-blue bg-ds-bg/50 p-4 text-center text-sm text-ds-periwinkle">
+        Maximum documents reached — delete to upload more.
       </div>
     )
   }
@@ -82,28 +82,28 @@ export function FileUpload({ onUpload, documentCount, maxDocuments }: FileUpload
         className={[
           'cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors',
           dragging
-            ? 'border-blue-400 bg-blue-50'
-            : 'border-gray-300 bg-gray-50 hover:border-gray-400 hover:bg-gray-100',
+            ? 'border-ds-periwinkle bg-ds-blue/30'
+            : 'border-ds-blue bg-ds-bg/50 hover:border-ds-periwinkle hover:bg-ds-blue/20',
           uploading ? 'pointer-events-none opacity-60' : '',
         ].join(' ')}
       >
-        <p className="text-sm font-medium text-gray-700">
+        <p className="text-sm font-medium text-ds-pale">
           {uploading ? 'Uploading…' : 'Drop a PDF here or click to upload'}
         </p>
-        <p className="mt-1 text-xs text-gray-400">
+        <p className="mt-1 text-xs text-ds-periwinkle">
           PDF only · max {MAX_FILE_SIZE_MB}MB
         </p>
       </div>
 
       {/* Progress bar — shown while uploading */}
       {uploading && (
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
-          <div className="h-full animate-pulse rounded-full bg-blue-500" />
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-ds-blue">
+          <div className="h-full animate-pulse rounded-full bg-ds-periwinkle" />
         </div>
       )}
 
       {/* Inline validation / upload error */}
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-red-400">{error}</p>}
 
       <input
         ref={inputRef}

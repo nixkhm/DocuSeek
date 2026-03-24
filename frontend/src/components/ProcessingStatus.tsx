@@ -22,7 +22,7 @@ interface ProcessingStatusProps {
 export function ProcessingStatus({ status }: ProcessingStatusProps) {
   if (status === 'ready') {
     return (
-      <span className="flex items-center gap-1 text-xs font-medium text-green-600">
+      <span className="flex items-center gap-1 text-xs font-medium text-green-400">
         <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
           <path
             fillRule="evenodd"
@@ -37,7 +37,7 @@ export function ProcessingStatus({ status }: ProcessingStatusProps) {
 
   if (status === 'error') {
     return (
-      <span className="flex items-center gap-1 text-xs font-medium text-red-600">
+      <span className="flex items-center gap-1 text-xs font-medium text-red-400">
         <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
           <path
             fillRule="evenodd"
@@ -64,17 +64,17 @@ export function ProcessingStatus({ status }: ProcessingStatusProps) {
               className={[
                 'h-1.5 w-1.5 rounded-full',
                 done
-                  ? 'bg-blue-500'
+                  ? 'bg-ds-periwinkle'
                   : active
-                    ? 'animate-pulse bg-blue-400'
-                    : 'bg-gray-300',
+                    ? 'animate-pulse bg-ds-pale'
+                    : 'bg-ds-blue',
               ].join(' ')}
             />
-            {i < STAGES.length - 2 && <div className="h-px w-2 bg-gray-200" />}
+            {i < STAGES.length - 2 && <div className="h-px w-2 bg-ds-blue" />}
           </div>
         )
       })}
-      <span className="ml-1 text-xs text-gray-500 capitalize">{status}…</span>
+      <span className="ml-1 text-xs text-ds-periwinkle capitalize">{status}…</span>
     </div>
   )
 }

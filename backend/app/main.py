@@ -70,3 +70,12 @@ app.include_router(chat.router)
 async def health() -> dict:
     """Health check endpoint used by Docker and Railway."""
     return {"status": "ok"}
+
+
+@app.get("/api/v1/config")
+async def config() -> dict:
+    """Return public runtime configuration for the frontend."""
+    return {
+        "llm_provider": settings.llm_provider,
+        "llm_model": settings.llm_model,
+    }

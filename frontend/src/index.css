@@ -1,1 +1,22 @@
 @import 'tailwindcss';
+
+@theme {
+  --color-ds-bg: #0b2440;
+  --color-ds-navy: #113f67;
+  --color-ds-blue: #38598b;
+  --color-ds-periwinkle: #a2a8d3;
+  --color-ds-pale: #e7eaf6;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    @apply bg-ds-bg text-ds-pale;
+  }
+
+  ::placeholder {
+    color: #a2a8d3;
+    opacity: 0.7;
+  }
+}

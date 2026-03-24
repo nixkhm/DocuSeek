@@ -13,6 +13,7 @@ interface DocumentSidebarProps {
   onToggleSelect: (id: string) => void
   onSelectAll: () => void
   onDeselectAll: () => void
+  onHowToUse: () => void
 }
 
 export function DocumentSidebar({
@@ -23,23 +24,31 @@ export function DocumentSidebar({
   onToggleSelect,
   onSelectAll,
   onDeselectAll,
+  onHowToUse,
 }: DocumentSidebarProps) {
   const [open, setOpen] = useState(true)
+  const [pendingDelete, setPendingDelete] = useState<Document | null>(null)
 
   const readyDocs = documents.filter((d) => d.status === 'ready')
   const allSelected =
     readyDocs.length > 0 && readyDocs.every((d) => selectedDocIds.includes(d.id))
+
+  function confirmDelete() {
+    if (!pendingDelete) return
+    onDelete(pendingDelete.id)
+    setPendingDelete(null)
+  }
 
   return (
     <>
       {/* Mobile hamburger */}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="fixed left-4 top-4 z-20 flex items-center justify-center rounded-md border border-gray-200 bg-white p-2 shadow-sm md:hidden"
+        className="fixed left-4 top-4 z-20 flex items-center justify-center rounded-md border border-ds-blue bg-ds-navy p-2 shadow-sm md:hidden"
         aria-label="Toggle sidebar"
       >
         <svg
-          className="h-5 w-5 text-gray-600"
+          className="h-5 w-5 text-ds-pale"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -56,44 +65,81 @@ export function DocumentSidebar({
       {/* Overlay on mobile when open */}
       {open && (
         <div
-          className="fixed inset-0 z-10 bg-black/20 md:hidden"
+          className="fixed inset-0 z-10 bg-black/40 md:hidden"
           onClick={() => setOpen(false)}
         />
+      )}
+
+      {/* Delete confirmation modal */}
+      {pendingDelete && (
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/60">
+          <div className="mx-4 w-full max-w-sm rounded-xl border border-ds-blue bg-ds-navy p-6 shadow-xl">
+            <p className="text-sm font-semibold text-ds-pale">Delete document?</p>
+            <p className="mt-2 text-sm text-ds-periwinkle">
+              Are you sure you want to delete{' '}
+              <span className="font-medium text-ds-pale">{pendingDelete.filename}</span>?
+            </p>
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                onClick={() => setPendingDelete(null)}
+                className="rounded-lg border border-ds-blue px-4 py-2 text-sm text-ds-periwinkle hover:bg-ds-blue/30 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="rounded-lg bg-red-500/80 px-4 py-2 text-sm font-medium text-white hover:bg-red-500 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Sidebar panel */}
       <aside
         className={[
-          'fixed inset-y-0 left-0 z-10 flex w-72 flex-col border-r border-gray-200 bg-white transition-transform duration-200',
+          'fixed inset-y-0 left-0 z-10 flex w-72 flex-col border-r border-ds-blue bg-ds-navy transition-transform duration-200',
           open ? 'translate-x-0' : '-translate-x-full',
           'md:static md:translate-x-0',
         ].join(' ')}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-          <h2 className="text-sm font-semibold text-gray-800">Documents</h2>
-          <span className="text-xs text-gray-400">
-            {documents.length}/{MAX_DOCUMENTS}
-          </span>
+        <div className="relative flex flex-col border-b border-ds-blue/50 px-4 py-3 gap-3">
+          <img src="/logo.png" alt="DocuSeek" className="w-full object-contain p-10" />
+          <button
+            onClick={onHowToUse}
+            className="cursor-pointer absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full border border-ds-blue/60 text-xs font-bold text-ds-periwinkle hover:bg-ds-blue/30 hover:text-ds-pale transition-colors"
+            aria-label="How to use"
+          >
+            ?
+          </button>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-ds-pale">Documents</h2>
+            <span className="text-xs text-ds-periwinkle">
+              {documents.length}/{MAX_DOCUMENTS}
+            </span>
+          </div>
         </div>
 
         {/* Select all / deselect all */}
         {readyDocs.length > 0 && (
-          <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-2">
+          <div className="flex items-center gap-2 border-b border-ds-blue/50 px-4 py-2">
             <button
               onClick={allSelected ? onDeselectAll : onSelectAll}
-              className="text-xs text-blue-600 hover:underline"
+              className="text-xs text-ds-periwinkle hover:text-ds-pale hover:underline"
             >
               {allSelected ? 'Deselect all' : 'Select all'}
             </button>
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-ds-periwinkle/60">
               ({selectedDocIds.length} selected)
             </span>
           </div>
         )}
 
         {/* Document list */}
-        <ul className="flex-1 overflow-y-auto divide-y divide-gray-100">
+        <ul className="flex-1 overflow-y-auto divide-y divide-ds-blue/40">
           {documents.map((doc) => (
             <li key={doc.id} className="flex items-start gap-3 px-4 py-3">
               <input
@@ -101,23 +147,23 @@ export function DocumentSidebar({
                 checked={selectedDocIds.includes(doc.id)}
                 disabled={doc.status !== 'ready'}
                 onChange={() => onToggleSelect(doc.id)}
-                className="mt-0.5 h-4 w-4 cursor-pointer rounded border-gray-300 text-blue-600 disabled:cursor-not-allowed disabled:opacity-40"
+                className="mt-0.5 h-4 w-4 cursor-pointer rounded border-ds-blue accent-ds-periwinkle disabled:cursor-not-allowed disabled:opacity-40"
               />
               <div className="min-w-0 flex-1">
                 <p
-                  className="truncate text-sm font-medium text-gray-800"
+                  className="truncate text-sm font-medium text-ds-pale"
                   title={doc.filename}
                 >
                   {doc.filename}
                 </p>
-                <p className="mt-0.5 text-xs text-gray-400">{doc.page_count} pages</p>
+                <p className="mt-0.5 text-xs text-ds-periwinkle">{doc.page_count} pages</p>
                 <div className="mt-1">
                   <ProcessingStatus status={doc.status} />
                 </div>
               </div>
               <button
-                onClick={() => onDelete(doc.id)}
-                className="mt-0.5 shrink-0 text-gray-300 hover:text-red-500"
+                onClick={() => setPendingDelete(doc)}
+                className="mt-0.5 shrink-0 text-ds-periwinkle/40 hover:text-red-400 transition-colors"
                 aria-label={`Delete ${doc.filename}`}
               >
                 <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -133,12 +179,33 @@ export function DocumentSidebar({
         </ul>
 
         {/* Upload zone */}
-        <div className="border-t border-gray-100 p-4">
+        <div className="border-t border-ds-blue/50 p-4">
           <FileUpload
             onUpload={onUpload}
             documentCount={documents.length}
             maxDocuments={MAX_DOCUMENTS}
           />
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-ds-blue/50 px-4 py-3 text-center space-y-0.5">
+          <p className="text-xs text-ds-periwinkle/60">
+            Designed & built by{' '}
+            <a
+              href="https://github.com/nixkhm"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-0.5 text-ds-periwinkle hover:text-ds-pale transition-colors underline underline-offset-2"
+            >
+              Nicholas Masters
+              <svg className="h-3 w-3 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.25 5.5a.75.75 0 0 0-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 0 0 .75-.75v-4a.75.75 0 0 1 1.5 0v4A2.25 2.25 0 0 1 12.75 17h-8.5A2.25 2.25 0 0 1 2 14.75v-8.5A2.25 2.25 0 0 1 4.25 4h5a.75.75 0 0 1 0 1.5h-5Zm6.75-3a.75.75 0 0 1 .75-.75h3.75a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V3.81l-6.22 6.22a.75.75 0 0 1-1.06-1.06L14.19 2.75H11a.75.75 0 0 1-.75-.75Z" clipRule="evenodd" />
+              </svg>
+            </a>
+          </p>
+          <p className="text-xs text-ds-periwinkle/40">
+            © 2026 Nicholas Masters. All rights reserved.
+          </p>
         </div>
       </aside>
     </>
