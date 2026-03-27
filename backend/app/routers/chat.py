@@ -9,7 +9,7 @@ from app.core.deps import get_db, get_session_id
 from app.core.limiter import limiter
 from app.schemas.chat import ChatRequest, ChatSSEEvent, Citation
 from app.services.cache import cache_service
-from app.services.chain import extract_citations, stream_chain
+from app.services.graph import extract_citations, stream_graph
 from app.services.embedding import embedding_service
 from app.services.retriever import retriever_service
 
@@ -42,20 +42,16 @@ async def chat(
             query_embedding=embedding,
             session_id=session_id,
             document_ids=doc_ids,
-            top_k=10,
+            top_k=20,
         )
         await cache_service.set(body.query, doc_ids, embedding, chunks)
 
     async def event_stream():
-        full_answer = []
-
-        async for token in stream_chain(body.query, chunks):
-            full_answer.append(token)
+        async for token in stream_graph(body.query, chunks):
             event = ChatSSEEvent(token=token)
             yield f"data: {event.model_dump_json()}\n\n"
 
-        answer = "".join(full_answer)
-        raw_citations = extract_citations(answer, chunks)
+        raw_citations = extract_citations(chunks)
         citations = [Citation(**c) for c in raw_citations]
 
         final_event = ChatSSEEvent(citations=citations, done=True)
