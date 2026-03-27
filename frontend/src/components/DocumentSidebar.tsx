@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Document } from '../hooks/useDocuments'
 import { FileUpload } from './FileUpload'
+import { PdfViewerModal } from './PdfViewerModal'
 import { ProcessingStatus } from './ProcessingStatus'
 
 const MAX_DOCUMENTS = 5
@@ -28,6 +29,7 @@ export function DocumentSidebar({
 }: DocumentSidebarProps) {
   const [open, setOpen] = useState(true)
   const [pendingDelete, setPendingDelete] = useState<Document | null>(null)
+  const [viewingDoc, setViewingDoc] = useState<Document | null>(null)
 
   const readyDocs = documents.filter((d) => d.status === 'ready')
   const allSelected =
@@ -67,6 +69,15 @@ export function DocumentSidebar({
         <div
           className="fixed inset-0 z-10 bg-black/40 md:hidden"
           onClick={() => setOpen(false)}
+        />
+      )}
+
+      {/* PDF viewer modal */}
+      {viewingDoc && (
+        <PdfViewerModal
+          docId={viewingDoc.id}
+          filename={viewingDoc.filename}
+          onClose={() => setViewingDoc(null)}
         />
       )}
 
@@ -162,8 +173,19 @@ export function DocumentSidebar({
                 </div>
               </div>
               <button
+                onClick={() => setViewingDoc(doc)}
+                disabled={doc.status !== 'ready'}
+                className="cursor-pointer mt-0.5 shrink-0 text-ds-periwinkle/40 hover:text-ds-periwinkle transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
+                aria-label={`View ${doc.filename}`}
+              >
+                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+                  <path fillRule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clipRule="evenodd" />
+                </svg>
+              </button>
+              <button
                 onClick={() => setPendingDelete(doc)}
-                className="mt-0.5 shrink-0 text-ds-periwinkle/40 hover:text-red-400 transition-colors"
+                className="cursor-pointer mt-0.5 shrink-0 text-ds-periwinkle/40 hover:text-red-400 transition-colors"
                 aria-label={`Delete ${doc.filename}`}
               >
                 <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">

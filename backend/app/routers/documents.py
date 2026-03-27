@@ -2,6 +2,7 @@ import uuid
 
 import fitz
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
+from fastapi.responses import Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -147,6 +148,28 @@ async def get_document(
         status=document.status,
         chunk_count=chunk_count,
         created_at=document.created_at,
+    )
+
+
+@router.get("/{doc_id}/file")
+async def get_document_file(
+    doc_id: uuid.UUID,
+    session_id: uuid.UUID = Depends(get_session_id),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    """Serve the raw PDF bytes for in-browser viewing. Scoped to the current session."""
+    result = await db.execute(
+        select(Document).where(Document.id == doc_id, Document.session_id == session_id)
+    )
+    document = result.scalar_one_or_none()
+    if document is None:
+        raise HTTPException(status_code=404, detail="Document not found.")
+
+    data = await storage.get(document.file_path)
+    return Response(
+        content=data,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{document.filename}"'},
     )
 
 

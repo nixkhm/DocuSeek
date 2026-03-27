@@ -53,4 +53,14 @@ export const api = {
 
   upload: <T>(path: string, formData: FormData) =>
     request<T>(path, { method: 'POST', body: formData }),
+
+  fetchPdfBlob: async (docId: string): Promise<string> => {
+    const sessionId = localStorage.getItem(SESSION_KEY)
+    const response = await fetch(`${BASE_URL}/api/v1/documents/${docId}/file`, {
+      headers: sessionId ? { 'X-Session-ID': sessionId } : {},
+    })
+    if (!response.ok) throw new Error('Failed to load PDF')
+    const blob = await response.blob()
+    return URL.createObjectURL(blob)
+  },
 }
