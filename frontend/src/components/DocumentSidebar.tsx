@@ -93,13 +93,13 @@ export function DocumentSidebar({
             <div className="mt-5 flex justify-end gap-3">
               <button
                 onClick={() => setPendingDelete(null)}
-                className="rounded-lg border border-ds-blue px-4 py-2 text-sm text-ds-periwinkle hover:bg-ds-blue/30 transition-colors"
+                className="cursor-pointer rounded-lg border border-ds-blue px-4 py-2 text-sm text-ds-periwinkle hover:bg-ds-blue/30 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
-                className="rounded-lg bg-red-500/80 px-4 py-2 text-sm font-medium text-white hover:bg-red-500 transition-colors"
+                className="cursor-pointer rounded-lg bg-red-500/80 px-4 py-2 text-sm font-medium text-white hover:bg-red-500 transition-colors"
               >
                 Delete
               </button>
