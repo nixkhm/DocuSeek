@@ -16,10 +16,12 @@ def get_llm() -> BaseChatModel:
             model=settings.llm_model,
             api_key=settings.anthropic_api_key,
             streaming=True,
+            max_retries=3,
         )
 
     return ChatOpenAI(
         model=settings.llm_model,
         api_key=settings.openai_api_key,
         streaming=True,
+        max_retries=3,
     )
