@@ -10,7 +10,7 @@ from sqlalchemy import select
 
 from app.db import async_session_factory
 from app.models.chunk import Chunk
-from app.models.document import Document
+from app.models.document import Document, DocumentStatus
 from app.services.embedding import embedding_service
 from app.services.storage import storage
 
@@ -107,7 +107,7 @@ async def _chunk(
     pages: list[dict],
 ) -> list[dict]:
     """Chunk extracted pages and persist to the chunks table."""
-    await _set_status(db, doc_id, "chunking")
+    await _set_status(db, doc_id, DocumentStatus.CHUNKING)
 
     raw_chunks = chunk_pages(pages)
 
@@ -133,7 +133,7 @@ async def _chunk(
 
 async def _embed(db: AsyncSession, doc_id: uuid.UUID) -> None:
     """Embed all chunks for a document and store vectors in pgvector."""
-    await _set_status(db, doc_id, "embedding")
+    await _set_status(db, doc_id, DocumentStatus.EMBEDDING)
 
     result = await db.execute(select(Chunk).where(Chunk.document_id == doc_id))
     chunks = result.scalars().all()
@@ -154,7 +154,7 @@ async def process(doc_id: uuid.UUID, file_path: str, session_id: uuid.UUID) -> N
     async with async_session_factory() as db:
         try:
             # Stage 1: extract
-            await _set_status(db, doc_id, "extracting")
+            await _set_status(db, doc_id, DocumentStatus.EXTRACTING)
             data = await storage.get(file_path)
             pages = extract_pages(data)
 
@@ -165,9 +165,9 @@ async def process(doc_id: uuid.UUID, file_path: str, session_id: uuid.UUID) -> N
             await _embed(db, doc_id)
 
             # Stage 4: ready
-            await _set_status(db, doc_id, "ready")
+            await _set_status(db, doc_id, DocumentStatus.READY)
 
         except Exception:
             async with async_session_factory() as err_db:
-                await _set_status(err_db, doc_id, "error")
+                await _set_status(err_db, doc_id, DocumentStatus.ERROR)
             raise

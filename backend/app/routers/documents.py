@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.deps import get_db, get_session_id
 from app.models.chunk import Chunk
-from app.models.document import Document
+from app.models.document import Document, DocumentStatus
 from app.schemas.documents import DocumentResponse
 from app.services.pdf_pipeline import process as run_pipeline
 from app.services.storage import storage
@@ -80,7 +80,7 @@ async def upload_document(
         filename=file.filename or "upload.pdf",
         page_count=page_count,
         file_path=file_path,
-        status="uploading",
+        status=DocumentStatus.UPLOADING,
     )
     db.add(document)
     await db.commit()

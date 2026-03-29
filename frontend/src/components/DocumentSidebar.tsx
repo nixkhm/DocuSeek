@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Document } from '../hooks/useDocuments'
+import { DocumentStatus } from '../types'
 import { FileUpload } from './FileUpload'
 import { PdfViewerModal } from './PdfViewerModal'
 import { ProcessingStatus } from './ProcessingStatus'
@@ -31,7 +32,7 @@ export function DocumentSidebar({
   const [pendingDelete, setPendingDelete] = useState<Document | null>(null)
   const [viewingDoc, setViewingDoc] = useState<Document | null>(null)
 
-  const readyDocs = documents.filter((d) => d.status === 'ready')
+  const readyDocs = documents.filter((d) => d.status === DocumentStatus.READY)
   const allSelected =
     readyDocs.length > 0 && readyDocs.every((d) => selectedDocIds.includes(d.id))
 
@@ -156,7 +157,7 @@ export function DocumentSidebar({
               <input
                 type="checkbox"
                 checked={selectedDocIds.includes(doc.id)}
-                disabled={doc.status !== 'ready'}
+                disabled={doc.status !== DocumentStatus.READY}
                 onChange={() => onToggleSelect(doc.id)}
                 className="mt-0.5 h-4 w-4 cursor-pointer rounded border-ds-blue accent-ds-periwinkle disabled:cursor-not-allowed disabled:opacity-40"
               />
@@ -174,7 +175,7 @@ export function DocumentSidebar({
               </div>
               <button
                 onClick={() => setViewingDoc(doc)}
-                disabled={doc.status !== 'ready'}
+                disabled={doc.status !== DocumentStatus.READY}
                 className="cursor-pointer mt-0.5 shrink-0 text-ds-periwinkle/40 hover:text-ds-periwinkle transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
                 aria-label={`View ${doc.filename}`}
               >

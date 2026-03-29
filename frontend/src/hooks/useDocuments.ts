@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../services/api'
+import { DocumentStatus } from '../types'
 
 export interface Document {
   id: string
   filename: string
   page_count: number
-  status: 'uploading' | 'extracting' | 'chunking' | 'embedding' | 'ready' | 'error'
+  status: DocumentStatus
   chunk_count: number | null
   created_at: string
 }
@@ -29,7 +30,7 @@ function applyDocs(
 ) {
   setDocuments(docs)
   setSelectedDocIds((prev) => {
-    const readyIds = docs.filter((d) => d.status === 'ready').map((d) => d.id)
+    const readyIds = docs.filter((d) => d.status === DocumentStatus.READY).map((d) => d.id)
     const added = readyIds.filter((id) => !prev.includes(id))
     return added.length > 0 ? [...prev, ...added] : prev
   })
@@ -49,7 +50,7 @@ export function useDocuments(sessionId: string | null): UseDocumentsReturn {
       const docs = await api.get<Document[]>('/api/v1/documents')
       if (cancelled) return
       applyDocs(setDocuments, setSelectedDocIds, docs)
-      const allDone = docs.every((d) => d.status === 'ready' || d.status === 'error')
+      const allDone = docs.every((d) => d.status === DocumentStatus.READY || d.status === DocumentStatus.ERROR)
       if (allDone && pollRef.current) {
         clearInterval(pollRef.current)
         pollRef.current = null
@@ -75,7 +76,7 @@ export function useDocuments(sessionId: string | null): UseDocumentsReturn {
       const docs = await api.get<Document[]>('/api/v1/documents')
       if (cancelled) return
       applyDocs(setDocuments, setSelectedDocIds, docs)
-      const allDone = docs.every((d) => d.status === 'ready' || d.status === 'error')
+      const allDone = docs.every((d) => d.status === DocumentStatus.READY || d.status === DocumentStatus.ERROR)
       if (allDone && pollRef.current) {
         clearInterval(pollRef.current)
         pollRef.current = null
@@ -111,7 +112,7 @@ export function useDocuments(sessionId: string | null): UseDocumentsReturn {
   }, [])
 
   const selectAll = useCallback(() => {
-    setSelectedDocIds(documents.filter((d) => d.status === 'ready').map((d) => d.id))
+    setSelectedDocIds(documents.filter((d) => d.status === DocumentStatus.READY).map((d) => d.id))
   }, [documents])
 
   const deselectAll = useCallback(() => setSelectedDocIds([]), [])

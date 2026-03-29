@@ -1,10 +1,20 @@
 import uuid
 from datetime import datetime
+from enum import StrEnum
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
+
+
+class DocumentStatus(StrEnum):
+    UPLOADING = "uploading"
+    EXTRACTING = "extracting"
+    CHUNKING = "chunking"
+    EMBEDDING = "embedding"
+    READY = "ready"
+    ERROR = "error"
 
 
 class Document(Base):
@@ -25,7 +35,6 @@ class Document(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
-    # status enum: uploading | extracting | chunking | embedding | ready | error
     status: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="uploading"
+        String(20), nullable=False, default=DocumentStatus.UPLOADING
     )

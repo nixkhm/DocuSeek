@@ -1,17 +1,18 @@
+import { DocumentStatus } from '../types'
 import type { Document } from '../hooks/useDocuments'
 
 type Status = Document['status']
 
 const STAGES: { key: Status; label: string }[] = [
-  { key: 'uploading', label: 'Uploading' },
-  { key: 'extracting', label: 'Extracting' },
-  { key: 'chunking', label: 'Chunking' },
-  { key: 'embedding', label: 'Embedding' },
-  { key: 'ready', label: 'Ready' },
+  { key: DocumentStatus.UPLOADING, label: 'Uploading' },
+  { key: DocumentStatus.EXTRACTING, label: 'Extracting' },
+  { key: DocumentStatus.CHUNKING, label: 'Chunking' },
+  { key: DocumentStatus.EMBEDDING, label: 'Embedding' },
+  { key: DocumentStatus.READY, label: 'Ready' },
 ]
 
 function stageIndex(status: Status): number {
-  if (status === 'error') return -1
+  if (status === DocumentStatus.ERROR) return -1
   return STAGES.findIndex((s) => s.key === status)
 }
 
@@ -20,7 +21,7 @@ interface ProcessingStatusProps {
 }
 
 export function ProcessingStatus({ status }: ProcessingStatusProps) {
-  if (status === 'ready') {
+  if (status === DocumentStatus.READY) {
     return (
       <span className="flex items-center gap-1 text-xs font-medium text-green-400">
         <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -35,7 +36,7 @@ export function ProcessingStatus({ status }: ProcessingStatusProps) {
     )
   }
 
-  if (status === 'error') {
+  if (status === DocumentStatus.ERROR) {
     return (
       <span className="flex items-center gap-1 text-xs font-medium text-red-400">
         <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -54,7 +55,7 @@ export function ProcessingStatus({ status }: ProcessingStatusProps) {
 
   return (
     <div className="flex items-center gap-1">
-      {STAGES.filter((s) => s.key !== 'ready').map((stage, i) => {
+      {STAGES.filter((s) => s.key !== DocumentStatus.READY).map((stage, i) => {
         const done = i < current
         const active = i === current
 
