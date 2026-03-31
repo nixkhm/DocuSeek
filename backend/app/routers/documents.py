@@ -49,7 +49,9 @@ async def upload_document(
         page_count = len(pdf)
         pdf.close()
     except Exception:
-        raise HTTPException(status_code=400, detail="File could not be read as a valid PDF.")
+        raise HTTPException(
+            status_code=400, detail="File could not be read as a valid PDF."
+        )
 
     if page_count > settings.max_pages_per_doc:
         raise HTTPException(
@@ -59,13 +61,18 @@ async def upload_document(
 
     # Validate session document count
     result = await db.execute(
-        select(func.count()).select_from(Document).where(Document.session_id == session_id)
+        select(func.count())
+        .select_from(Document)
+        .where(Document.session_id == session_id)
     )
     doc_count = result.scalar_one()
     if doc_count >= settings.max_docs_per_session:
         raise HTTPException(
             status_code=400,
-            detail=f"Session already has {settings.max_docs_per_session} documents. Delete one to upload more.",
+            detail=(
+                f"Session already has {settings.max_docs_per_session} documents. "
+                "Delete one to upload more."
+            ),
         )
 
     # Save file to storage
@@ -106,7 +113,9 @@ async def list_documents(
 ) -> list[DocumentResponse]:
     """List all documents for the current session."""
     result = await db.execute(
-        select(Document).where(Document.session_id == session_id).order_by(Document.created_at)
+        select(Document)
+        .where(Document.session_id == session_id)
+        .order_by(Document.created_at)
     )
     documents = result.scalars().all()
     return [

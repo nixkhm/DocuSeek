@@ -9,8 +9,8 @@ from app.core.deps import get_db, get_session_id
 from app.core.limiter import limiter
 from app.schemas.chat import ChatRequest, ChatSSEEvent, Citation
 from app.services.cache import cache_service
-from app.services.graph import extract_citations, stream_graph
 from app.services.embedding import embedding_service
+from app.services.graph import extract_citations, stream_graph
 from app.services.retriever import retriever_service
 
 router = APIRouter(prefix="/api/v1/chat", tags=["chat"])

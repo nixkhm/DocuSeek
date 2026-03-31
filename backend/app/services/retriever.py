@@ -46,7 +46,9 @@ class RetrieverService:
                 Chunk.chunk_index,
                 Chunk.document_id,
                 Document.filename.label("document_name"),
-                (1 - Chunk.embedding.cosine_distance(query_vector)).label("similarity_score"),
+                (1 - Chunk.embedding.cosine_distance(query_vector)).label(
+                    "similarity_score"
+                ),
             )
             .join(Document, Chunk.document_id == Document.id)
             .where(Chunk.session_id == session_id)
@@ -57,9 +59,11 @@ class RetrieverService:
             semantic_base = semantic_base.where(Chunk.document_id.in_(document_ids))
 
         # Subquery for top-k semantic results
-        semantic_subq = semantic_base.order_by(
-            Chunk.embedding.cosine_distance(query_vector)
-        ).limit(top_k).subquery("semantic")
+        semantic_subq = (
+            semantic_base.order_by(Chunk.embedding.cosine_distance(query_vector))
+            .limit(top_k)
+            .subquery("semantic")
+        )
 
         # Header chunks for the same documents — joined in one round trip via UNION ALL
         header_stmt = (
@@ -73,9 +77,9 @@ class RetrieverService:
             )
             .join(Document, Chunk.document_id == Document.id)
             .where(Chunk.session_id == session_id)
-            .where(Chunk.document_id.in_(
-                select(semantic_subq.c.document_id).distinct()
-            ))
+            .where(
+                Chunk.document_id.in_(select(semantic_subq.c.document_id).distinct())
+            )
             .where(Chunk.chunk_index == 0)
         )
 
@@ -93,7 +97,7 @@ class RetrieverService:
         result = await db.execute(combined)
         rows = result.mappings().all()
 
-        # Build deduped output: headers first (score=1.0 sentinel), then semantic by relevance
+        # Build deduped output: headers first (score=1.0 sentinel), then semantic
         header_rows = [r for r in rows if float(r["similarity_score"]) == 1.0]
         semantic_rows = sorted(
             [r for r in rows if float(r["similarity_score"]) != 1.0],
@@ -108,13 +112,15 @@ class RetrieverService:
             key = (row["document_name"], row["page_number"], row["chunk_index"])
             if key not in seen_keys:
                 seen_keys.add(key)
-                chunks.append({
-                    "chunk_text": row["chunk_text"],
-                    "page_number": row["page_number"],
-                    "chunk_index": row["chunk_index"],
-                    "document_name": row["document_name"],
-                    "similarity_score": float(row["similarity_score"]),
-                })
+                chunks.append(
+                    {
+                        "chunk_text": row["chunk_text"],
+                        "page_number": row["page_number"],
+                        "chunk_index": row["chunk_index"],
+                        "document_name": row["document_name"],
+                        "similarity_score": float(row["similarity_score"]),
+                    }
+                )
 
         return chunks
 

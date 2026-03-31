@@ -1,10 +1,12 @@
-import shutil
 from abc import ABC, abstractmethod
 from pathlib import Path
 
 
 class StorageBackend(ABC):
-    """Abstract interface for file storage. Swap LocalStorageBackend for S3StorageBackend with no other changes."""
+    """Abstract interface for file storage.
+
+    Swap LocalStorageBackend for S3StorageBackend with no other changes.
+    """
 
     @abstractmethod
     async def save(self, file_path: str, data: bytes) -> str:

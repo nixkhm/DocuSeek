@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import Request, Response
+from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import select, update
 
@@ -69,9 +69,7 @@ class SessionMiddleware:
         async def send_with_session_header(message):
             if message["type"] == "http.response.start":
                 headers = list(message.get("headers", []))
-                headers.append(
-                    (b"x-session-id", session_id.encode())
-                )
+                headers.append((b"x-session-id", session_id.encode()))
                 message = {**message, "headers": headers}
             await send(message)
 
@@ -82,7 +80,10 @@ class SessionMiddleware:
         response = JSONResponse(
             status_code=401,
             content={
-                "detail": "Session expired or invalid. A new session will be created on your next request.",
+                "detail": (
+                    "Session expired or invalid. "
+                    "A new session will be created on your next request."
+                ),
                 "error_code": "SESSION_INVALID",
             },
         )

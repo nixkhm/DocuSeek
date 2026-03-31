@@ -28,7 +28,9 @@ class CacheService:
             return None
         return json.loads(value)
 
-    async def set(self, query: str, document_ids: list, embedding: list, results: list) -> None:
+    async def set(
+        self, query: str, document_ids: list, embedding: list, results: list
+    ) -> None:
         """Cache embedding and results with a 1-hour TTL."""
         payload = json.dumps({"embedding": embedding, "results": results})
         await self._client.setex(self._key(query, document_ids), CACHE_TTL, payload)

@@ -23,10 +23,12 @@ Use markdown for structure. Keep answers concise.
 
 ── END OF EXCERPTS ──"""
 
-CHAT_PROMPT = ChatPromptTemplate.from_messages([
-    ("system", SYSTEM_PROMPT),
-    ("human", "{question}"),
-])
+CHAT_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        ("system", SYSTEM_PROMPT),
+        ("human", "{question}"),
+    ]
+)
 
 
 def format_context(chunks: list[dict]) -> str:
@@ -34,6 +36,7 @@ def format_context(chunks: list[dict]) -> str:
     sections = []
     for chunk in chunks:
         sections.append(
-            f"[{chunk['document_name']}, p.{chunk['page_number']}]\n{chunk['chunk_text']}"
+            f"[{chunk['document_name']}, p.{chunk['page_number']}]\n"
+            f"{chunk['chunk_text']}"
         )
     return "\n\n---\n\n".join(sections)

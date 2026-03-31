@@ -4,9 +4,8 @@ import uuid
 import fitz
 import pdfplumber
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import async_session_factory
 from app.models.chunk import Chunk
@@ -63,6 +62,13 @@ def extract_pages(data: bytes) -> list[dict]:
     return result
 
 
+async def extract(db: AsyncSession, doc_id: uuid.UUID, file_path: str) -> list[dict]:
+    """Step 1: fetch PDF bytes and extract text per page."""
+    await _set_status(db, doc_id, DocumentStatus.EXTRACTING)
+    data = await storage.get(file_path)
+    return extract_pages(data)
+
+
 def chunk_pages(pages: list[dict]) -> list[dict]:
     """Split extracted pages into chunks using RecursiveCharacterTextSplitter.
 
@@ -88,28 +94,28 @@ def chunk_pages(pages: list[dict]) -> list[dict]:
         docs = splitter.create_documents([text])
         for doc in docs:
             start = doc.metadata.get("start_index", 0)
-            chunks.append({
-                "page_number": page["page_number"],
-                "chunk_index": chunk_index,
-                "text": doc.page_content,
-                "char_start": start,
-                "char_end": start + len(doc.page_content),
-            })
+            chunks.append(
+                {
+                    "page_number": page["page_number"],
+                    "chunk_index": chunk_index,
+                    "text": doc.page_content,
+                    "char_start": start,
+                    "char_end": start + len(doc.page_content),
+                }
+            )
             chunk_index += 1
 
     return chunks
 
 
-async def _chunk(
+async def chunk(
     db: AsyncSession,
     doc_id: uuid.UUID,
     session_id: uuid.UUID,
     pages: list[dict],
-) -> list[dict]:
-    """Chunk extracted pages and persist to the chunks table."""
+) -> None:
+    """Step 2: split pages into chunks and persist to the chunks table."""
     await _set_status(db, doc_id, DocumentStatus.CHUNKING)
-
-    raw_chunks = chunk_pages(pages)
 
     chunk_rows = [
         Chunk(
@@ -122,17 +128,15 @@ async def _chunk(
             char_start=c["char_start"],
             char_end=c["char_end"],
         )
-        for c in raw_chunks
+        for c in chunk_pages(pages)
     ]
 
     db.add_all(chunk_rows)
     await db.commit()
 
-    return raw_chunks
 
-
-async def _embed(db: AsyncSession, doc_id: uuid.UUID) -> None:
-    """Embed all chunks for a document and store vectors in pgvector."""
+async def embed(db: AsyncSession, doc_id: uuid.UUID) -> None:
+    """Step 3: embed all chunks for a document and store vectors in pgvector."""
     await _set_status(db, doc_id, DocumentStatus.EMBEDDING)
 
     result = await db.execute(select(Chunk).where(Chunk.document_id == doc_id))
@@ -153,18 +157,13 @@ async def process(doc_id: uuid.UUID, file_path: str, session_id: uuid.UUID) -> N
     """Run the full PDF processing pipeline: extract → chunk → embed → ready."""
     async with async_session_factory() as db:
         try:
-            # Stage 1: extract
-            await _set_status(db, doc_id, DocumentStatus.EXTRACTING)
-            data = await storage.get(file_path)
-            pages = extract_pages(data)
+            # Step 1: extract text from PDF
+            pages = await extract(db, doc_id, file_path)
+            # Step 2: split into chunks and persist
+            await chunk(db, doc_id, session_id, pages)
+            # Step 3: generate and store embeddings
+            await embed(db, doc_id)
 
-            # Stage 2: chunk
-            await _chunk(db, doc_id, session_id, pages)
-
-            # Stage 3: embed
-            await _embed(db, doc_id)
-
-            # Stage 4: ready
             await _set_status(db, doc_id, DocumentStatus.READY)
 
         except Exception:

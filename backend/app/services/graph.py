@@ -18,7 +18,7 @@ class GraphState(TypedDict):
 
 
 def _clean_snippet(text: str) -> str:
-    """Strip PDF running headers/footers and return a clean excerpt with ellipsis markers."""
+    """Strip PDF running headers/footers; return a clean excerpt with ellipsis."""
     lines = text.strip().splitlines()
 
     content_start = 0
@@ -54,12 +54,14 @@ def extract_citations(chunks: list[dict]) -> list[dict]:
         if key in seen:
             continue
         seen.add(key)
-        citations.append({
-            "document_name": chunk["document_name"],
-            "page_number": chunk["page_number"],
-            "chunk_text_snippet": _clean_snippet(chunk["chunk_text"]),
-            "relevance_score": chunk["similarity_score"],
-        })
+        citations.append(
+            {
+                "document_name": chunk["document_name"],
+                "page_number": chunk["page_number"],
+                "chunk_text_snippet": _clean_snippet(chunk["chunk_text"]),
+                "relevance_score": chunk["similarity_score"],
+            }
+        )
 
     return citations
 
@@ -68,10 +70,12 @@ async def _generate(state: GraphState) -> GraphState:
     """LangGraph node: call the LLM and return the answer."""
     llm = get_llm()
     chain = CHAT_PROMPT | llm | StrOutputParser()
-    answer = await chain.ainvoke({
-        "question": state["question"],
-        "context": state["context"],
-    })
+    answer = await chain.ainvoke(
+        {
+            "question": state["question"],
+            "context": state["context"],
+        }
+    )
     return {"answer": answer}
 
 

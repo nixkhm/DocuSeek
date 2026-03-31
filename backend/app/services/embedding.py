@@ -1,23 +1,9 @@
-from abc import ABC, abstractmethod
-
 from openai import AsyncOpenAI
 
 from app.core.config import settings
 
 
-class EmbeddingService(ABC):
-    """Abstract interface for embedding generation. Swap implementations with no other changes."""
-
-    @abstractmethod
-    async def embed_text(self, text: str) -> list[float]:
-        """Embed a single string. Returns a vector of floats."""
-
-    @abstractmethod
-    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
-        """Embed a list of strings in batches. Returns a list of vectors."""
-
-
-class OpenAIEmbeddingService(EmbeddingService):
+class OpenAIEmbeddingService:
     """Embedding service backed by OpenAI text-embedding-3-small (1536 dims)."""
 
     BATCH_SIZE = 100

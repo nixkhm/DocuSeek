@@ -16,6 +16,7 @@ from app.db import async_session_factory
 from app.models.session import Session
 from app.routers import chat, documents, search
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Run startup tasks before serving requests."""
@@ -35,7 +36,10 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-def _rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+
+def _rate_limit_exceeded_handler(
+    request: Request, exc: RateLimitExceeded
+) -> JSONResponse:
     """Return 429 with Retry-After header when rate limit is exceeded."""
     retry_after = math.ceil(3600 - (time.time() % 3600))
     return JSONResponse(
@@ -51,7 +55,11 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # CORS — allow frontend dev server
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
